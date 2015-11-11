@@ -14,12 +14,15 @@ public class InvitationSalesSQL
     public static void main(String[] args)
     {
         InvitationSalesSQL test = new InvitationSalesSQL();
+        test.displayTable(TABLE_NAME);
+        /*
         test.createTable(TABLE_NAME);
         String[ ] infoArray = {"Kole", "AWFSAGE53251", "10", "$1.00", "$10.00", "Baby Shower!"};
         test.save(TABLE_NAME, infoArray);
         String[ ] testArray = {"John Doe", "R3nD0m1D", "33", "$2.00", "$66.00", "Wedding!"};
-        test.delete(TABLE_NAME, 2);
 
+        test.save(TABLE_NAME, testArray);
+*/
     }
     // Database name and table name
     private final static String DBF_NAME = "javasql";
@@ -132,7 +135,7 @@ public class InvitationSalesSQL
          *  - Statement
          * conn - Connection
          */
-        private void releaseResource(ResultSet rs)
+        private void releaseResource(ResultSet rs, Statement stmt)
         {
             if(rs != null)
             {
@@ -140,11 +143,11 @@ public class InvitationSalesSQL
                 try { rs.close(); }
                 catch(SQLException e) { /* Ignored */}
             }
-            //if(ps != null)
-            //{
-            //   try { ps.close(); }
-            //   catch (SQLException e) { /* Ignored */ }
-            //}
+            if(stmt != null)
+            {
+               try { stmt.close(); }
+               catch (SQLException e) { /* Ignored */ }
+            }
             if(conn != null)
             {
                 // close the database connection
@@ -216,7 +219,7 @@ public class InvitationSalesSQL
             e.printStackTrace();
         }
         // release the resources
-        finally { conn.releaseResource(rs);}
+        finally { conn.releaseResource(rs, null);}
     } // end of createTable( )
 
     /**
@@ -247,9 +250,59 @@ public class InvitationSalesSQL
             e.printStackTrace();
         }
         // disconnect resources
-        finally{ conn.releaseResource(null); }
+        finally{ conn.releaseResource(null, null); }
     } // end of delete( )
 
+
+    public void displayTable(String tableName)
+    {
+        // declare/initialize variables
+        Statement stmt = null;
+        ResultSet rs = null;
+        int id;
+        String name;
+        String partNumber;
+        String quantity;
+        String originalCostOfItem;
+        String sellingPrice;
+        String description;
+
+        dbCon conn = new dbCon();
+        conn.connect();
+
+        // Grab the data from the database
+        try
+        {
+            String sql = "SELECT * FROM " + tableName;
+            // execute the statement and save it in rs
+            stmt = conn.connect().createStatement();
+            rs = stmt.executeQuery(sql);
+            // display table 'header'
+            System.out.println("\nID\tNAME\t\tPART#\t\tQUANTITY\tORIGINAL COST\tSELLING PRICE\tDESCRIPTION");
+            System.out.println("------------------------------------------------------------------------------");
+            // loop through all the data in the table
+            while(rs.next())
+            {
+                id                  = rs.getInt("id");
+                name                = rs.getString("name");
+                partNumber          = rs.getString("partNumber");
+                quantity            = rs.getString("quantity");
+                originalCostOfItem  = rs.getString("originalCostOfItem");
+                sellingPrice        = rs.getString("sellingPrice");
+                description         = rs.getString("description");
+                // display each row of data in the table
+                System.out.printf("%d\t%s\t\t%s\t%s\t\t%s\t\t\t%s\t\t\t%s\n", id, name, partNumber, quantity, originalCostOfItem, sellingPrice, description);
+            }
+        }
+        catch(SQLException e) // if something went wrong
+        {
+            // display an error message to the user.
+            System.out.println("ERROR: " + e.getMessage());
+            e.printStackTrace();
+        }
+        // disconnect the resources
+        finally{ conn.releaseResource(rs, stmt);}
+    }
     /**
      * save( ) - Insert or Update a record in the database
      *
@@ -261,7 +314,7 @@ public class InvitationSalesSQL
         // declare variables
         ResultSet rs = null;
         Statement stmt = null;
-        String sql = "";
+        String sql;
         // establish database connection
         dbCon conn = new dbCon();
         conn.connect();
@@ -314,7 +367,7 @@ public class InvitationSalesSQL
             e.printStackTrace();
         }
         // disconnect resources
-        finally{ conn.releaseResource(rs); }
+        finally{ conn.releaseResource(rs, stmt); }
     } // end of save( )
 } // end of InvitationSalesSQL
 
