@@ -2,21 +2,24 @@ import java.sql.*;
 import java.util.Properties;
 
 /**
- * InvitationsSQL.java - Project SQL. Demonstrating my knowledge of SQL/CRUD
+ * InvitationSalesSQL.java - Project SQL. Demonstrating my knowledge of SQL/CRUD
  *
  * @author Kole Swearingen
  *         Written: 11/11/2015
  *         Revised:
  *         Sources:
  */
-public class InvitationsSQL
+public class InvitationSalesSQL
 {
     public static void main(String[] args)
     {
-        InvitationsSQL test = new InvitationsSQL();
-        //test.createTable(TABLE_NAME);
+        InvitationSalesSQL test = new InvitationSalesSQL();
+        test.createTable(TABLE_NAME);
         String[ ] infoArray = {"Kole", "AWFSAGE53251", "10", "$1.00", "$10.00", "Baby Shower!"};
         test.save(TABLE_NAME, infoArray);
+        String[ ] testArray = {"John Doe", "R3nD0m1D", "33", "$2.00", "$66.00", "Wedding!"};
+        test.delete(TABLE_NAME, 2);
+
     }
     // Database name and table name
     private final static String DBF_NAME = "javasql";
@@ -25,7 +28,7 @@ public class InvitationsSQL
     /**
      * dbCon( ) - Manage the database connections
      */
-    public class dbCon
+    protected class dbCon
     {
         // The mySQL username and password
         private final String USER_NAME = "root";
@@ -38,9 +41,10 @@ public class InvitationsSQL
 
         /**
          * connect( ) - Connect to the database
+         *
          * @return - The new connection
          */
-        public Connection connect( )
+        private Connection connect( )
         {
             // set up variables for connection
             Properties connectionProps = new Properties();
@@ -53,11 +57,13 @@ public class InvitationsSQL
                 this.conn = DriverManager.getConnection("jdbc:mysql://" + this.SERVER_NAME + ":" + this.PORT_NUMBER +
                     "/" + DBF_NAME, connectionProps);
             }
-            catch(SQLException e)
+            catch(SQLException e) // if something went wrong
             {
+                // display an error message to the user
                 System.out.println("ERROR: Could not connect to the database " + e.getMessage());
                 e.printStackTrace();
             }
+            // return the connection
             return this.conn;
         } // end of connect( )
 
@@ -68,18 +74,23 @@ public class InvitationsSQL
          * @return boolean if command was successful or not
          * @throws SQLException if something goes wrong
          */
-        public boolean executeUpdate(String command) throws SQLException
+        private boolean executeUpdate(String command) throws SQLException
         {
-            java.sql.Statement stmt = null;
+            // declare/initialize variable
+            Statement stmt = null;
+            // attempt to 'update' the database
             try
             {
+                // create a statement
                 stmt = conn.createStatement();
-                stmt.executeUpdate(command); // this will throw a SQLException if it fails
+                // execute the statement
+                stmt.executeUpdate(command);
+                // return true if it was successful
                 return true;
             }
             finally
             {
-                // this will run whether we throw an exception or not
+                // clear/close the statement
                 if(stmt != null) { stmt.close( ); }
             }
         } // end of executeUpdate( )
@@ -91,19 +102,25 @@ public class InvitationsSQL
          * @throws SQLException if something goes wrong
          * @return ResultSet containing data from the table
          */
-        public ResultSet executeQuery(Connection conn, String command) throws SQLException
+        private ResultSet executeQuery(String command) throws SQLException
         {
+            // declare/initialize variables
             ResultSet rs;
-            java.sql.Statement stmt = null;
+            Statement stmt = null;
+            // select from database
             try
             {
+                // create a statement
                 stmt = conn.createStatement();
+                // run the statement against the database
+                // save it as a ResultSet
                 rs = stmt.executeQuery(command);
+                // return the selected results
                 return rs;
             }
             finally
             {
-                // This will run
+                // clear/close the statement
                 if(stmt != null) { stmt.close(); }
             }
         } // end of executeQuery( )
@@ -115,10 +132,11 @@ public class InvitationsSQL
          *  - Statement
          * conn - Connection
          */
-        public void releaseResource(ResultSet rs)
+        private void releaseResource(ResultSet rs)
         {
             if(rs != null)
             {
+                // close/clear the ResultSet
                 try { rs.close(); }
                 catch(SQLException e) { /* Ignored */}
             }
@@ -129,20 +147,25 @@ public class InvitationsSQL
             //}
             if(conn != null)
             {
+                // close the database connection
                 try {conn.close(); }
                 catch(SQLException e) { /* Ignored */}
             }
         } // end of releaseResource( )
     } // end of dbCon( )
 
+
     /**
      * createTable( ) - Create a new database table
+     *
      * @param tableName - The name of the new table
      */
     public void createTable(String tableName)
     {
+        // declare/initialize variables
         boolean createTable = true;
         ResultSet rs = null;
+        // establish database connection
         dbCon conn = new dbCon();
         conn.connect();
 
@@ -152,17 +175,21 @@ public class InvitationsSQL
             // Check to see if there is an existing table
             DatabaseMetaData meta = conn.connect().getMetaData();
             rs = meta.getTables(null, null, "%", null);
-
+            // loop through the table list
             while(rs.next())
             {
+                // discover if table exists
                 if(rs.getString(3).equals(tableName))
                 {
+                    // if tables does, set boolean to false
+                    // so no attempt is made in recreating it
                     createTable = false;
                     break;
                 }
             }
-            if(createTable)
+            if(createTable) // table does not exist
             {
+                // sql statement to create a new table
                 String sql =
                     "CREATE TABLE " + tableName + " ( " +
                         "id smallint(5) NOT NULL AUTO_INCREMENT, " +
@@ -173,16 +200,18 @@ public class InvitationsSQL
                         "sellingPrice varchar(15) NOT NULL, " +
                         "description varchar(50), " +
                         "PRIMARY KEY (id))";
+                // execute the CREATE statement
                 conn.executeUpdate(sql);
+                System.out.println("Successfully created table: " + tableName);
             }
-            else
+            else // if table already exists
             {
                 System.out.println("The table " + tableName + " already exists.");
             }
-
         }
-        catch(SQLException e)
+        catch(SQLException e) // if something went wrong
         {
+            // display the error message to user
             System.out.println("ERROR: " + e.getMessage());
             e.printStackTrace();
         }
@@ -190,26 +219,64 @@ public class InvitationsSQL
         finally { conn.releaseResource(rs);}
     } // end of createTable( )
 
+    /**
+     * delete( ) - Delete a specified data entry
+     *
+     * @param tableName - Name of the table the data is deleted from
+     * @param userID - The id(index) of the record in the table
+     */
+    public void delete(String tableName, int userID)
+    {
+        // connect to the database
+        dbCon conn = new dbCon();
+        conn.connect();
+
+        // Delete user specified data entry
+        try
+        {
+            // sql that runs against the database
+            String sql = "DELETE FROM " + tableName + " WHERE id ='" + userID + "'";
+            // execute sql
+            conn.executeUpdate(sql);
+            System.out.println("Deleted the record from the database.");
+        }
+        catch(SQLException e) // if something went wrong
+        {
+            // display an error message
+            System.out.println("ERROR: " + e.getMessage());
+            e.printStackTrace();
+        }
+        // disconnect resources
+        finally{ conn.releaseResource(null); }
+    } // end of delete( )
 
     /**
      * save( ) - Insert or Update a record in the database
+     *
      * @param tableName - The name of the table being using
      * @param infoArray - The information being inserted or updated
      */
     public void save(String tableName, String[ ] infoArray)
     {
+        // declare variables
         ResultSet rs = null;
         Statement stmt = null;
         String sql = "";
+        // establish database connection
         dbCon conn = new dbCon();
         conn.connect();
 
         try
         {
+            // create a 'shell' for a statement
             stmt = conn.connect().createStatement();
+            // run the sql and save it into rs
             rs = stmt.executeQuery("SELECT * FROM " + tableName + " WHERE name='" + infoArray[0] + "'");
+            // if database returns no match
+            //insert data
             if(!rs.isBeforeFirst())
             {
+                // sql INSERT statement
                 sql = "INSERT INTO " + tableName + " (name, partNumber, quantity, originalCostOfItem, sellingPrice, description)" +
                     " VALUES("
                     + "'" + infoArray[0] + "', "
@@ -218,11 +285,14 @@ public class InvitationsSQL
                     + "'" + infoArray[3] + "', "
                     + "'" + infoArray[4] + "', "
                     + "'" + infoArray[5] + "') ";
+                // execute the INSERT statement
                 conn.executeUpdate(sql);
+                // notify the user everything went as planned
                 System.out.println("Inserted: " + infoArray[0] + " " + infoArray[1] + " successfully.");
             }
-            else
+            else // if database returns a match
             {
+                // sql UPDATE statement
                 sql = "UPDATE " + tableName
                     + " SET name='"          + infoArray[0] + "', "
                     + "partNumber='"         + infoArray[1] + "', "
@@ -231,17 +301,21 @@ public class InvitationsSQL
                     + "sellingPrice='"       + infoArray[4] + "', "
                     + "description='"        + infoArray[5] + "' "
                     + "WHERE name='" + infoArray[0] + "'";
+                // execute the UPDATE statement
                 conn.executeUpdate(sql);
+                // notify user everything went as planned
                 System.out.println("Updated: " + infoArray[0] + " " + infoArray[1] + " successfully.");
             }
         }
-        catch(SQLException e)
+        catch(SQLException e) // if something goes wrong
         {
+            // display an error message
             System.out.println("ERROR: " + e.getMessage());
             e.printStackTrace();
         }
+        // disconnect resources
         finally{ conn.releaseResource(rs); }
     } // end of save( )
-} // end of InvitationsSQL
+} // end of InvitationSalesSQL
 
 
