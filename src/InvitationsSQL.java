@@ -14,62 +14,14 @@ public class InvitationsSQL
     public static void main(String[] args)
     {
         InvitationsSQL test = new InvitationsSQL();
-        test.createTable(TABLE_NAME);
+        //test.createTable(TABLE_NAME);
+        String[ ] infoArray = {"Kole", "AWFSAGE53251", "10", "$1.00", "$10.00", "Baby Shower!"};
+        test.save(TABLE_NAME, infoArray);
     }
     // Database name and table name
     private final static String DBF_NAME = "javasql";
     private final static String TABLE_NAME = "invitations";
 
-    public void createTable(String tableName)
-    {
-        boolean createTable = true;
-        ResultSet rs = null;
-        dbCon conn = new dbCon();
-        conn.connect();
-
-        // Create a new table
-        try
-        {
-            // Check to see if there is an existing table
-            DatabaseMetaData meta = conn.connect().getMetaData();
-            rs = meta.getTables(null, null, "%", null);
-
-            while(rs.next())
-            {
-                if(rs.getString(3).equals(tableName))
-                {
-                    createTable = false;
-                    break;
-                }
-            }
-            if(createTable)
-            {
-                String sql =
-                    "CREATE TABLE " + tableName + " ( " +
-                        "id smallint(5) NOT NULL AUTO_INCREMENT, " +
-                        "name varchar(20), " +
-                        "description varchar(50), " +
-                        "partnumber varchar(20) NOT NULL, " +
-                        "quantity int(11) NOT NULL, " +
-                        "originalCostOfItem varchar(10) NOT NULL, " +
-                        "sellingPrice varchar(15) NOT NULL, " +
-                        "PRIMARY KEY (id))";
-                conn.executeUpdate(sql);
-            }
-            else
-            {
-                System.out.println("The table " + tableName + "already exists.");
-            }
-
-        }
-        catch(SQLException e)
-        {
-            System.out.println("ERROR: " + e.getMessage());
-            e.printStackTrace();
-        }
-        // release the resources
-        finally { conn.releaseResource(rs);}
-    } // end of createTable( )
     /**
      * dbCon( ) - Manage the database connections
      */
@@ -84,6 +36,10 @@ public class InvitationsSQL
         private final int PORT_NUMBER = 3306;
         Connection conn = null;
 
+        /**
+         * connect( ) - Connect to the database
+         * @return - The new connection
+         */
         public Connection connect( )
         {
             // set up variables for connection
@@ -92,14 +48,17 @@ public class InvitationsSQL
             connectionProps.put("password", this.PASSWORD);
 
             // Connect to MySQL
-            try {
-                conn = DriverManager.getConnection("jdbc:mysql://" + this.SERVER_NAME + ":" + this.PORT_NUMBER +
+            try
+            {
+                this.conn = DriverManager.getConnection("jdbc:mysql://" + this.SERVER_NAME + ":" + this.PORT_NUMBER +
                     "/" + DBF_NAME, connectionProps);
-            } catch (SQLException e) {
-                System.out.println("ERROR: Could not connect to the database");
+            }
+            catch(SQLException e)
+            {
+                System.out.println("ERROR: Could not connect to the database " + e.getMessage());
                 e.printStackTrace();
             }
-            return conn;
+            return this.conn;
         } // end of connect( )
 
         /**
@@ -175,6 +134,114 @@ public class InvitationsSQL
             }
         } // end of releaseResource( )
     } // end of dbCon( )
+
+    /**
+     * createTable( ) - Create a new database table
+     * @param tableName - The name of the new table
+     */
+    public void createTable(String tableName)
+    {
+        boolean createTable = true;
+        ResultSet rs = null;
+        dbCon conn = new dbCon();
+        conn.connect();
+
+        // Create a new table
+        try
+        {
+            // Check to see if there is an existing table
+            DatabaseMetaData meta = conn.connect().getMetaData();
+            rs = meta.getTables(null, null, "%", null);
+
+            while(rs.next())
+            {
+                if(rs.getString(3).equals(tableName))
+                {
+                    createTable = false;
+                    break;
+                }
+            }
+            if(createTable)
+            {
+                String sql =
+                    "CREATE TABLE " + tableName + " ( " +
+                        "id smallint(5) NOT NULL AUTO_INCREMENT, " +
+                        "name varchar(20) NOT NULL, " +
+                        "partNumber varchar(20) NOT NULL, " +
+                        "quantity varchar(5) NOT NULL, " +
+                        "originalCostOfItem varchar(10) NOT NULL, " +
+                        "sellingPrice varchar(15) NOT NULL, " +
+                        "description varchar(50), " +
+                        "PRIMARY KEY (id))";
+                conn.executeUpdate(sql);
+            }
+            else
+            {
+                System.out.println("The table " + tableName + " already exists.");
+            }
+
+        }
+        catch(SQLException e)
+        {
+            System.out.println("ERROR: " + e.getMessage());
+            e.printStackTrace();
+        }
+        // release the resources
+        finally { conn.releaseResource(rs);}
+    } // end of createTable( )
+
+
+    /**
+     * save( ) - Insert or Update a record in the database
+     * @param tableName - The name of the table being using
+     * @param infoArray - The information being inserted or updated
+     */
+    public void save(String tableName, String[ ] infoArray)
+    {
+        ResultSet rs = null;
+        Statement stmt = null;
+        String sql = "";
+        dbCon conn = new dbCon();
+        conn.connect();
+
+        try
+        {
+            stmt = conn.connect().createStatement();
+            rs = stmt.executeQuery("SELECT * FROM " + tableName + " WHERE name='" + infoArray[0] + "'");
+            if(!rs.isBeforeFirst())
+            {
+                sql = "INSERT INTO " + tableName + " (name, partNumber, quantity, originalCostOfItem, sellingPrice, description)" +
+                    " VALUES("
+                    + "'" + infoArray[0] + "', "
+                    + "'" + infoArray[1] + "', "
+                    + "'" + infoArray[2] + "', "
+                    + "'" + infoArray[3] + "', "
+                    + "'" + infoArray[4] + "', "
+                    + "'" + infoArray[5] + "') ";
+                conn.executeUpdate(sql);
+                System.out.println("Inserted: " + infoArray[0] + " " + infoArray[1] + " successfully.");
+            }
+            else
+            {
+                sql = "UPDATE " + tableName
+                    + " SET name='"          + infoArray[0] + "', "
+                    + "partNumber='"         + infoArray[1] + "', "
+                    + "quantity='"           + infoArray[2] + "', "
+                    + "originalCostOfItem='" + infoArray[3] + "', "
+                    + "sellingPrice='"       + infoArray[4] + "', "
+                    + "description='"        + infoArray[5] + "' "
+                    + "WHERE name='" + infoArray[0] + "'";
+                conn.executeUpdate(sql);
+                System.out.println("Updated: " + infoArray[0] + " " + infoArray[1] + " successfully.");
+            }
+        }
+        catch(SQLException e)
+        {
+            System.out.println("ERROR: " + e.getMessage());
+            e.printStackTrace();
+        }
+        finally{ conn.releaseResource(rs); }
+    } // end of save( )
 } // end of InvitationsSQL
 
 
