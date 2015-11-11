@@ -370,5 +370,3 @@ public class InvitationSalesSQL
         finally{ conn.releaseResource(rs, stmt); }
     } // end of save( )
 } // end of InvitationSalesSQL
-
-
