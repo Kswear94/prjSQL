@@ -377,7 +377,7 @@ public class InvitationSalesSQL
                 System.arraycopy(infoArray, 0, dataArray, 0, dataArray.length-1);
                 // execute the update by sending both the SQL
                 // and the updated information to the method
-                // so the prepared statement can
+                // while the prepared statement can
                 // NEGATE SQL INJECTION!
                 con.executeUpdate("UPDATE " + tableName + " SET name = ?, partNumber = ?, quantity = ?, originalCostOfItem = ?, sellingPrice = ?, description = ? WHERE name = ?", dataArray);
                 /**
